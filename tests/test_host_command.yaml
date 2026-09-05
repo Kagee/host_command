@@ -4,7 +4,9 @@ packages:
 external_components:
   - source:
       type: local
-      path: ..
+      path: ../components
+    components:
+      - host_command
 
 text_sensor:
   - platform: host_command

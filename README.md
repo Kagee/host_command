@@ -42,9 +42,8 @@ If shell functionality is required, create a script containing the required logi
 
 ```yaml
 external_components:
-  - source:
-      type: local
-      path: external_components
+  - source: github://Kagee/host_command@main
+    components: [ host_command ]
 
 host:
 
@@ -139,7 +138,7 @@ ip saddr 192.0.2.10 tcp dport 6053 accept comment "ESPHome Node API from Home As
 ip saddr 192.0.2.10 tcp dport 8082 accept comment "ESPHome Node OTA from Home Assistant"
 ```
 
-If OTA updates are performed from a different machine than Home Assistant, that machine must also be permitted to connect to the OTS port.
+If OTA updates are performed from a different machine than Home Assistant, that machine must also be permitted to connect to the OTA port.
 
 ## Logging
 
@@ -217,38 +216,52 @@ Running ESPHome as an unprivileged dedicated account limits the impact of such a
 
 ## Development
 
-A convenient source layout is:
+The repository uses the conventional ESPHome external component layout:
 
 ```text
-external_components/
-├── test_host_command.yaml
-└── host_command/
-    ├── __init__.py
-    ├── text_sensor.py
-    ├── host_command.cpp
-    └── host_command.h
+host_command/
+├── components/
+│   └── host_command/
+│       ├── __init__.py
+│       ├── text_sensor.py
+│       ├── host_command.cpp
+│       └── host_command.h
+├── tests/
+│   └── test_host_command.yaml
+└── README.md
 ```
 
-The test configuration can reference the component directly:
+The test configuration references the local component directory:
 
 ```yaml
 external_components:
   - source:
       type: local
-      path: .
+      path: ../components
+    components:
+      - host_command
 ```
 
-Validate the configuration with:
+From the repository root, validate the test configuration with:
 
 ```bash
-esphome config external_components/test_host_command.yaml
+esphome config tests/test_host_command.yaml
 ```
 
 Compile it with:
 
 ```bash
-esphome compile external_components/test_host_command.yaml
+esphome compile tests/test_host_command.yaml
 ```
+
+When testing against an ESPHome host node running on the same machine, it can be compiled and uploaded:
+
+```bash
+esphome compile tests/test_host_command.yaml
+esphome upload tests/test_host_command.yaml --device 127.0.0.1
+```
+
+The running node must already have ESPHome OTA enabled for the upload to succeed.
 
 ## Status
 
