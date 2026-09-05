@@ -25,17 +25,6 @@ Currently supported:
 * Commands are only published as a new sensor state when they exit successfully with status `0`.
 * Execution as `root` is refused by default and can be enabled per entity with `allow_root: true`.
 
-## Features
-
-Currently supported:
-
-* `text_sensor` — periodically execute a predefined command and publish its stdout as text when the command exits successfully.
-* Configurable command arguments.
-* Separate stdout and stderr capture.
-* Configurable logging of arguments, exit status, stdin, stdout, and stderr.
-* Commands are only published as a new sensor state when they exit successfully with status `0`.
-* Execution as `root` is refused by default and can be enabled per entity with `allow_root: true`.
-
 **Warning:** Command execution is currently **blocking** and there is **no timeout**. ESPHome's main loop remains blocked until the executed command exits. A command that hangs or never exits will therefore block the ESPHome node indefinitely.
 
 Planned entity support:
