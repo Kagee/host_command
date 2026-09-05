@@ -48,7 +48,25 @@ host:
 
 text_sensor:
   - platform: host_command
-    name: "ZFS Pool Status"
+    name: "Run date every 10s"
+    update_interval: 10s
+
+    # These are the component-spesific options for the host_command text sensor
+    executable: /usr/bin/date
+    arguments:
+      - --iso=s
+    logging:
+      arguments: true
+      exit_status: true
+      stderr: true
+      stdin: true
+      stdout: true
+
+  - platform: host_command
+    name: "ZFS 'tank' status"
+    update_interval: 30min
+
+    # These are the component-spesific options for the host_command text sensor
     executable: /usr/sbin/zpool
     arguments:
       - list
@@ -56,22 +74,24 @@ text_sensor:
       - -o
       - health
       - tank
-    update_interval: 30min
     logging:
-      arguments: true
-      exit_status: true
+      arguments: false
+      exit_status: false
       stderr: false
       stdin: false
       stdout: false
 ```
 
-The equivalent command is:
+The equivalent commands are:
 
 ```text
+/usr/bin/date --iso=s
 /usr/sbin/zpool list -H -o health tank
 ```
 
-but it is executed directly rather than through a shell.
+### Home Assistant Sensors
+
+![Host Command sensors in Home Assistant](home-assistant-sensors.png)
 
 ## Firewall configuration
 
