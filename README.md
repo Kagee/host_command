@@ -1,10 +1,12 @@
 # ESPHome Host Command
 
-`host_command` is an ESPHome component for the `host` platform that executes predefined local commands and exposes their results through ESPHome entities.
+`host_command` is an ESPHome component for the [`host`](https://esphome.io/components/host/) platform that executes predefined local commands and exposes their results through ESPHome entities.
 
-This component is currently under __early__ development.
+This component is currently under **early development**.
 
-The component is intended for running ESPHome directly on a Linux host and integrating local system information and administrative operations with Home Assistant.
+The ESPHome `host` platform allows ESPHome to run as a native application on a Linux system instead of on a microcontroller such as an ESP32. This provides the familiar ESPHome configuration and native API, including integration with Home Assistant, while running directly on a Linux host.
+
+`host_command` extends this functionality by allowing commands configured in ESPHome YAML to be executed on the underlying Linux system and their output to be exposed as entities in Home Assistant.
 
 ## Development disclaimer
 
