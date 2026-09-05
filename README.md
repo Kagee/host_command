@@ -16,14 +16,36 @@ The author is developing an ESPHome component for the first time and had not wri
 
 ## Features
 
+Currently supported:
+
+* `text_sensor` — periodically execute a predefined command and publish its stdout as text when the command exits successfully.
+* Configurable command arguments.
+* Separate stdout and stderr capture.
+* Configurable logging of arguments, exit status, stdin, stdout, and stderr.
+* Commands are only published as a new sensor state when they exit successfully with status `0`.
+* Execution as `root` is refused by default and can be enabled per entity with `allow_root: true`.
+
+## Features
+
+Currently supported:
+
+* `text_sensor` — periodically execute a predefined command and publish its stdout as text when the command exits successfully.
+* Configurable command arguments.
+* Separate stdout and stderr capture.
+* Configurable logging of arguments, exit status, stdin, stdout, and stderr.
+* Commands are only published as a new sensor state when they exit successfully with status `0`.
+* Execution as `root` is refused by default and can be enabled per entity with `allow_root: true`.
+
+**Warning:** Command execution is currently **blocking** and there is **no timeout**. ESPHome's main loop remains blocked until the executed command exits. A command that hangs or never exits will therefore block the ESPHome node indefinitely.
+
 Planned entity support:
 
-* `text_sensor` — publish command stdout as text.
 * `sensor` — parse command stdout as a numeric value.
 * `binary_sensor` — derive state from command execution results.
 * `button` — execute a predefined command.
 
 Commands are executed directly using `fork()` and `execv()`.
+
 
 **No shell is invoked by `host_command`.**
 
@@ -43,7 +65,8 @@ If shell functionality is required, create a script containing the required logi
 ```yaml
 external_components:
   - source: github://Kagee/host_command@main
-    components: [ host_command ]
+    components:
+      - host_command
 
 host:
 
@@ -52,7 +75,7 @@ text_sensor:
     name: "Run date every 10s"
     update_interval: 10s
 
-    # These are the component-spesific options for the host_command text sensor
+    # These are the component-specific options for the host_command text sensor
     executable: /usr/bin/date
     arguments:
       - --iso=s
@@ -67,7 +90,7 @@ text_sensor:
     name: "ZFS 'tank' status"
     update_interval: 30min
 
-    # These are the component-spesific options for the host_command text sensor
+    # These are the component-specific options for the host_command text sensor
     executable: /usr/sbin/zpool
     arguments:
       - list
@@ -92,11 +115,13 @@ The equivalent commands are:
 
 ### Home Assistant Sensors
 
+The example above exposes the command output as two text sensor entities in Home Assistant.
+
 ![Host Command sensors in Home Assistant](home-assistant-sensors.png)
 
 ## Firewall configuration
 
-The ESPHome host normally only needs the native API and OTA ports accessible from Home Assistant. Access can be restricted to the IP address of the Home Assistant server.
+The ESPHome native API port must be accessible from Home Assistant. If OTA updates are used, the OTA port must also be accessible from the system performing the updates.
 
 The examples below use `192.0.2.10` as the Home Assistant IP address. Replace it with the actual address of your Home Assistant server.
 
@@ -265,9 +290,9 @@ The running node must already have ESPHome OTA enabled for the upload to succeed
 
 ## Status
 
-This component is currently under __early__ development.
+This component is currently under **early** development.
 
-The initial implementation focuses on `text_sensor` command execution and stdout capture.
+The current implementation supports periodically executing predefined commands as `text_sensor` entities, passing configured arguments, capturing stdout and stderr separately, and publishing stdout when the command exits successfully.
 
 Planned work includes:
 
@@ -275,7 +300,6 @@ Planned work includes:
 * Non-blocking command execution.
 * Timeout handling.
 * Standard input support.
-* Separate stdout and stderr capture.
 * Numeric sensors.
 * Binary sensors.
 * Buttons.
