@@ -1,0 +1,92 @@
+{
+  "folders": [
+    {
+      "name": "Host Command development",
+      "path": "../.."
+    }
+  ],
+  "settings": {
+    "chatgpt.openOnStartup": true,
+    "task.allowAutomaticTasks": "on",
+    "explorer.excludeGitIgnore": false,
+    "files.exclude": {
+      "**/.git": true,
+      "**/.gitignore": false,
+      "**/.esphome": true,
+      "**/__pycache__": true,
+      "**/.mypy_cache": true,
+      "**/.pytest_cache": true,
+      "**/.ruff_cache": true,
+      ".claude": true,
+      ".devcontainer": true,
+      ".github": true,
+      ".temp": true,
+      ".vscode": true,
+      ".clang-format": true,
+      ".clang-tidy": true,
+      ".coveragerc": true,
+      ".dockerignore": true,
+      ".editorconfig": true,
+      ".flake8": true,
+      ".gitattributes": true,
+      ".pre-commit-config.yaml": true,
+      ".yamllint": true,
+      "AGENTS.md": true,
+      "CLAUDE.md": true,
+      "GEMINI.md": true,
+      "CODEOWNERS": true,
+      "CODE_OF_CONDUCT.md": true,
+      "CONTRIBUTING.md": true,
+      "Doxyfile": true,
+      "LICENSE": true,
+      "MANIFEST.in": true,
+      "README.md": true,
+      "THREAT_MODEL.md": true,
+      "codecov.yml": true,
+      "docker": true,
+      "esphome": true,
+      "esphome.egg-info": true,
+      "netlify.toml": true,
+      "platformio.ini": true,
+      "pyproject.toml": true,
+      "requirements*.txt": true,
+      "script": true,
+      "sdkconfig.defaults*": true,
+      "tests": true,
+      "venv": true,
+      "config/external_components/starter-components": true
+    },
+    "C_Cpp.default.includePath": [
+      "${workspaceFolder}/**"
+    ],
+    "C_Cpp.default.compilerPath": "/usr/bin/g++",
+    "C_Cpp.default.cppStandard": "c++17",
+    "C_Cpp.default.intelliSenseMode": "linux-gcc-x64"
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Host Command terminal",
+        "type": "process",
+        "command": "/usr/bin/zsh",
+        "args": ["-l", "-i"],
+        "options": {
+          "cwd": "${workspaceFolder}/config/external_components"
+        },
+        "isBackground": true,
+        "problemMatcher": [],
+        "runOptions": {
+          "runOn": "folderOpen"
+        },
+        "presentation": {
+          "reveal": "always",
+          "focus": false,
+          "panel": "dedicated",
+          "echo": false,
+          "showReuseMessage": false
+        }
+      }
+    ]
+  }
+}
