@@ -6,6 +6,11 @@
     }
   ],
   "settings": {
+    "git.autoRepositoryDetection": true,
+    "git.scanRepositories": ["config/external_components"],
+    "git.ignoredRepositories": [
+      "/home/hildenae/src/dev_esphome/esphome"
+    ],
     "chatgpt.openOnStartup": true,
     "task.allowAutomaticTasks": "on",
     "explorer.excludeGitIgnore": false,
