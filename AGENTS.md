@@ -18,10 +18,12 @@ through ESPHome text sensors. See `README.md` for usage and deployment details.
 
 ## Directory layout
 
-- `components/host_command/__init__.py`: code-generation namespace.
+- `components/host_command/__init__.py`: shared command schema and code generation.
 - `components/host_command/text_sensor.py`: configuration schema and code generation.
 - `components/host_command/host_command.h`: C++ class and configuration fields.
-- `components/host_command/host_command.cpp`: execution, output capture, and publishing.
+- `components/host_command/host_command.cpp`: shared policy/logging and text publishing.
+- `components/host_command/command_runner.{h,cpp}`: synchronous process runner.
+- `tests/test_command_runner.py`: isolated C++ runner regression tests.
 - `tests/test_host_command.yaml`: local component test; runs `date` every 10 seconds.
 - `tests/device.yaml`: local device configuration, excluded from Git.
 - `starter-components/`: Git-ignored reference templates, not the implementation.
@@ -38,7 +40,10 @@ through ESPHome text sensors. See `README.md` for usage and deployment details.
 - The default update interval is 60 seconds.
 - Execution as root is refused unless the entity sets `allow_root: true`.
 - Execution currently blocks the main loop and has no timeout.
-- A `logging.stdin` setting exists, but supplying stdin is not implemented.
+- Optional `stdin` supplies fixed input; stdin closes after delivery (immediately
+  when empty), rather than inheriting the host input. `logging.stdin` logs it.
+- The common runner distinguishes normal exit, signal, exec failure, and internal
+  errors, and returns raw output; entity helpers trim trailing CR/LF.
 
 Keep this description and the README aligned when behavior changes. Preserve the
 predefined-command model and root opt-in unless the requested change requires otherwise.

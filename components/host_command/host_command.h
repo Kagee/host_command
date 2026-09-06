@@ -1,26 +1,23 @@
 #pragma once
 
+#include "command_runner.h"
 #include "esphome/core/component.h"
 #include "esphome/components/text_sensor/text_sensor.h"
 
 #include <string>
 #include <vector>
 
-namespace esphome {
-namespace host_command {
-class HostCommandTextSensor : public esphome::PollingComponent, public esphome::text_sensor::TextSensor {
+namespace esphome::host_command {
+// Shared configuration, execution policy, and logging for command entities.
+class HostCommand {
  public:
-  void setup() override;
+  void set_executable(const std::string &executable) { this->invocation_.executable = executable; }
 
-  void update() override;
+  void set_arguments(const std::vector<std::string> &arguments) { this->invocation_.arguments = arguments; }
 
-  void dump_config() override;
+  void set_stdin(const std::string &data) { this->invocation_.stdin_data = data; }
 
-  void set_executable(const std::string &executable) { executable_ = executable; }
-
-  void set_arguments(const std::vector<std::string> &arguments) { arguments_ = arguments; }
-
-  void set_allow_root(bool allow_root) { allow_root_ = allow_root; }
+  void set_allow_root(bool allow_root) { this->allow_root_ = allow_root; }
 
   void set_log_arguments(bool value) { this->log_arguments_ = value; }
   void set_log_exit_status(bool value) { this->log_exit_status_ = value; }
@@ -29,8 +26,11 @@ class HostCommandTextSensor : public esphome::PollingComponent, public esphome::
   void set_log_stdout(bool value) { this->log_stdout_ = value; }
 
  protected:
-  std::string executable_;
-  std::vector<std::string> arguments_;
+  void setup_command_();
+  void dump_command_config_();
+  CommandResult execute_command_();
+
+  CommandInvocation invocation_;
 
   bool allow_root_{false};
 
@@ -40,5 +40,10 @@ class HostCommandTextSensor : public esphome::PollingComponent, public esphome::
   bool log_stdin_{false};
   bool log_stdout_{false};
 };
-}  // namespace host_command
-}  // namespace esphome
+class HostCommandTextSensor : public PollingComponent, public text_sensor::TextSensor, public HostCommand {
+ public:
+  void setup() override { this->setup_command_(); }
+  void update() override;
+  void dump_config() override;
+};
+}  // namespace esphome::host_command

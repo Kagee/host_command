@@ -19,7 +19,7 @@ The author is developing an ESPHome component for the first time and had not wri
 Currently supported:
 
 * `text_sensor` — periodically execute a predefined command and publish its stdout as text when the command exits successfully.
-* Configurable command arguments.
+* Configurable command arguments and optional stdin data.
 * Separate stdout and stderr capture.
 * Configurable logging of arguments, exit status, stdin, stdout, and stderr.
 * Commands are only published as a new sensor state when they exit successfully with status `0`.
@@ -154,6 +154,39 @@ ip saddr 192.0.2.10 tcp dport 8082 accept comment "ESPHome Node OTA from Home As
 
 If OTA updates are performed from a different machine than Home Assistant, that machine must also be permitted to connect to the OTA port.
 
+## Standard input and command results
+
+Set `stdin` alongside `executable` and `arguments` to supply fixed input:
+
+```yaml
+text_sensor:
+  - platform: host_command
+    name: "Echo configured input"
+    executable: /usr/bin/cat
+    stdin: "Hello from ESPHome\n"
+```
+
+The default is an empty string. The runner writes the complete input while draining
+stdout and stderr, then closes stdin so the command receives EOF. With empty or
+omitted input, stdin is closed immediately; commands no longer inherit ESPHome's
+stdin. No newline is added automatically. If the child closes stdin before all
+input can be written, execution reports an internal delivery error and no state
+is published. `logging.stdin` controls logging only; it does not supply input.
+
+All entities can reuse the synchronous `run_command(CommandInvocation)` function in
+`command_runner.h`. It returns separate, unmodified stdout and stderr strings and
+distinguishes normal exits, signal termination, `execv()` failure, and internal
+process/I/O errors. Normal exit codes and signal numbers have separate fields;
+signal termination never produces a synthetic `128 + signal` exit code. Errors
+include the failing operation and system error details where available. Internal
+I/O failures abort and reap the child; commands have no execution timeout.
+
+Shared entity helpers enforce root opt-in and handle configuration and logging.
+They strip trailing CR/LF from both output streams, preserving the existing text
+sensor behavior. The text sensor publishes only a normal exit with status `0`.
+Execution remains blocking, including input delivery and output capture; a child
+(or descendant holding an output pipe open) can block the node indefinitely.
+
 ## Logging
 
 Logging can be controlled independently for different parts of command execution:
@@ -236,6 +269,8 @@ The repository uses the conventional ESPHome external component layout:
 host_command/
 ├── components/
 │   └── host_command/
+│       ├── command_runner.h
+│       ├── command_runner.cpp
 │       ├── __init__.py
 │       ├── text_sensor.py
 │       ├── host_command.cpp
@@ -285,10 +320,8 @@ The current implementation supports periodically executing predefined commands a
 
 Planned work includes:
 
-* Shared command execution code for all entity types.
 * Non-blocking command execution.
 * Timeout handling.
-* Standard input support.
 * Numeric sensors.
 * Binary sensors.
 * Buttons.
