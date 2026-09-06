@@ -1,0 +1,128 @@
+esphome:
+  on_boot:
+    then:
+      - logger.log: "Boot: scheduling host_command test loop"
+      - script.execute: run_host_command_tests
+
+# PollingComponent schedules its first interval update shortly after boot. Use a
+# single long-running script instead so tests start at a predictable time after
+# boot and remain ordered in the log.
+script:
+  - id: run_host_command_tests
+    mode: single
+    then:
+      - delay: 2s
+      - while:
+          condition:
+            lambda: return true;
+          then:
+            - logger.log: "Test loop started"
+            - logger.log: "Running Test 1: date"
+            - component.update: host_command_date
+            - delay: 1s
+            - logger.log: "Running Test 2: echo configured stdin"
+            - component.update: host_command_echo_stdin
+            - delay: 1s
+            - logger.log: "Running Test 3: uppercase configured stdin"
+            - component.update: host_command_uppercase_stdin
+            - delay: 1s
+            - logger.log: "Running Test 4: explicit Bash script"
+            - component.update: host_command_bash_script
+            - delay: 1s
+            - logger.log: "Running Test 5: explicit Bash script with variable"
+            - component.update: host_command_bash_variable
+            - logger.log: "Test loop finished"
+            - delay: 5min
+
+external_components:
+  - source:
+      type: local
+      path: ../components
+    components:
+      - host_command
+
+text_sensor:
+  # Test 1: Execute a command with arguments and enable all logging options.
+  - platform: host_command
+    id: host_command_date
+    name: "Run date"
+    update_interval: never
+
+    # These are component-specific options for the host_command text sensor
+    executable: /usr/bin/date
+    arguments:
+      - --iso=s
+    logging:
+      arguments: true
+      exit_status: true
+      stderr: true
+      stdin: true
+      stdout: true
+
+  # Test 2: Deliver multiline stdin directly to a command with no arguments.
+  - platform: host_command
+    id: host_command_echo_stdin
+    name: "Echo configured stdin"
+    update_interval: never
+    executable: /usr/bin/cat
+    stdin: |-
+      first line
+      second line
+    logging:
+      stdin: true
+      stdout: true
+
+  # Test 3: Transform stdin using arguments and selective logging options.
+  - platform: host_command
+    id: host_command_uppercase_stdin
+    name: "Uppercase configured stdin"
+    update_interval: never
+    executable: /usr/bin/tr
+    arguments:
+      - a-z
+      - A-Z
+    stdin: "mixed case input\n"
+    logging:
+      arguments: false
+      exit_status: false
+      stderr: true
+      stdin: false
+      stdout: true
+
+  # Test 4: Run a script through an explicitly selected Bash executable.
+  # host_command invokes Bash directly and never inserts an implicit shell.
+  # The directory listing also exercises text-sensor state truncation when its
+  # output exceeds ESPHome's 255-byte limit.
+  - platform: host_command
+    id: host_command_bash_script
+    name: "Run explicit Bash script"
+    update_interval: never
+    executable: /bin/bash
+    stdin: |-
+      set -euo pipefail
+      echo "hello"
+      ls
+    logging:
+      exit_status: true
+      stderr: true
+      stdin: true
+      stdout: false
+
+  # Test 5: Preserve a Bash variable in literal stdin for the explicitly selected
+  # shell. host_command invokes Bash directly and never inserts an implicit shell.
+  # `!literal` prevents ESPHome from treating `$A` as a substitution; Bash expands
+  # it at runtime and `tr` produces "FOO" on stdout.
+  - platform: host_command
+    id: host_command_bash_variable
+    name: "Run explicit Bash script with variable"
+    update_interval: never
+    executable: /bin/bash
+    stdin: !literal |-
+      set -x
+      A="foo"
+      echo $A | tr a-z A-Z
+    logging:
+      exit_status: true
+      stderr: true
+      stdin: true
+      stdout: true

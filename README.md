@@ -173,6 +173,28 @@ stdin. No newline is added automatically. If the child closes stdin before all
 input can be written, execution reports an internal delivery error and no state
 is published. `logging.stdin` controls logging only; it does not supply input.
 
+### Tip: running Bash scripts
+
+`host_command` never inserts an implicit shell. To run a shell script, explicitly
+configure the shell as the executable and provide the script through `stdin`:
+
+```yaml
+text_sensor:
+  - platform: host_command
+    name: "Run explicit Bash script"
+    executable: /bin/bash
+    stdin: !literal |-
+      set -euo pipefail
+      A="foo"
+      echo "$A" | tr a-z A-Z
+```
+
+ESPHome normally treats `$A` and `${A}` as substitution expressions. The
+`!literal` tag disables ESPHome substitution for the complete block, preserving
+shell variables for Bash to expand at runtime. YAML quoting alone does not disable
+ESPHome substitutions, while escaping the dollar sign as `\$A` would pass that
+escape to Bash and prevent the intended expansion.
+
 All entities can reuse the synchronous `run_command(CommandInvocation)` function in
 `command_runner.h`. It returns separate, unmodified stdout and stderr strings and
 distinguishes normal exits, signal termination, `execv()` failure, and internal
@@ -184,6 +206,11 @@ I/O failures abort and reap the child; commands have no execution timeout.
 Shared entity helpers enforce root opt-in and handle configuration and logging.
 They strip trailing CR/LF from both output streams, preserving the existing text
 sensor behavior. The text sensor publishes only a normal exit with status `0`.
+Because Home Assistant limits entity states to 255 bytes, longer stdout is
+shortened to make room for a ` [TRUNCATED xxx chars]` suffix, where `xxx` is the
+number of removed bytes, and produces a warning in the log. The
+runner itself still returns the complete output, and `logging.stdout` logs it
+before text-sensor truncation.
 Execution remains blocking, including input delivery and output capture; a child
 (or descendant holding an output pipe open) can block the node indefinitely.
 
@@ -276,7 +303,9 @@ host_command/
 │       ├── host_command.cpp
 │       └── host_command.h
 ├── tests/
-│   └── test_host_command.yaml
+│   ├── host_command_tests.yaml
+│   ├── device_static.yaml
+│   └── device_live.yaml
 └── README.md
 ```
 
@@ -294,20 +323,20 @@ external_components:
 From the repository root, validate the test configuration with:
 
 ```bash
-esphome config tests/test_host_command.yaml
+esphome config tests/device_static.yaml
 ```
 
 Compile it with:
 
 ```bash
-esphome compile tests/test_host_command.yaml
+esphome compile tests/device_static.yaml
 ```
 
 When testing against an ESPHome host node running on the same machine, it can be compiled and uploaded:
 
 ```bash
-esphome compile tests/test_host_command.yaml
-esphome upload tests/test_host_command.yaml --device 127.0.0.1
+esphome compile tests/device_live.yaml
+esphome upload tests/device_live.yaml --device 127.0.0.1
 ```
 
 The running node must already have ESPHome OTA enabled for the upload to succeed.

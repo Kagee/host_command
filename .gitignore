@@ -7,3 +7,5 @@ __pycache__/
 /starter-components/
 /logs/
 device.yaml
+device_live.yaml
+device_static.yaml

@@ -24,10 +24,10 @@ through ESPHome text sensors. See `README.md` for usage and deployment details.
 - `components/host_command/host_command.cpp`: shared policy/logging and text publishing.
 - `components/host_command/command_runner.{h,cpp}`: synchronous process runner.
 - `tests/test_command_runner.py`: isolated C++ runner regression tests.
-- `tests/test_host_command.yaml`: local component test; runs `date` every 10 seconds.
-- `tests/device.yaml`: local device configuration, excluded from Git.
+- `tests/host_command_tests.yaml`: shared component test package.
+- `tests/device_static.yaml`: local standalone test configuration, excluded from Git.
+- `tests/device_live.yaml`: local live/OTA test configuration, excluded from Git.
 - `starter-components/`: Git-ignored reference templates, not the implementation.
-- `logs/`: compilation output saved for inspection.
 
 ## Current behavior
 
@@ -36,7 +36,9 @@ through ESPHome text sensors. See `README.md` for usage and deployment details.
 - Executables use absolute paths and predefined arguments. Execution uses `fork()`
   and `execv()` without an implicit shell.
 - Stdout and stderr are captured separately. Trailing CR/LF characters are removed;
-  stdout is published only when the command exits with status `0`.
+  stdout is published only when the command exits with status `0`. Text sensor
+  states longer than ESPHome's 255-byte limit are shortened to include a
+  ` [TRUNCATED xxx chars]` suffix and logged with a warning.
 - The default update interval is 60 seconds.
 - Execution as root is refused unless the entity sets `allow_root: true`.
 - Execution currently blocks the main loop and has no timeout.
@@ -180,7 +182,7 @@ Run development tools using `python3 script/run-in-env.py` from the parent
 checkout root. For configuration-only validation:
 
 ```sh
-python3 script/run-in-env.py esphome config config/external_components/tests/test_host_command.yaml
+python3 script/run-in-env.py esphome config config/external_components/tests/device_static.yaml
 ```
 
 Use relevant `pytest` tests for Python behavior, `clang-tidy` for C++ analysis,
@@ -196,30 +198,29 @@ and `config/`). The environment helper activates the checkout's virtual environm
 the bare `esphome` command may not be available on the shell's PATH.
 
 ```sh
-python3 script/run-in-env.py esphome compile config/external_components/tests/test_host_command.yaml
+python3 script/run-in-env.py esphome compile config/external_components/tests/device_static.yaml
 ```
-
-Create log files only when compiling. Save compilation stdout and stderr to a new
-timestamped file in this project's `logs/` directory. Do not create log files for
-inspection, editing, validation, or other non-compilation commands. For compilation, use:
-
-```sh
-mkdir -p config/external_components/logs
-compile_log="config/external_components/logs/compile-$(date +%Y%m%d-%H%M%S-%N).log"
-python3 script/run-in-env.py esphome compile config/external_components/tests/test_host_command.yaml > "$compile_log" 2>&1
-compile_status=$?
-printf 'Log: %s\nExit status: %s\n' "$compile_log" "$compile_status"
-```
-
-Check `compile_status` and inspect the log before reporting success. If wrapping
-this in a standalone script, end it with `exit "$compile_status"` to preserve failure
-status. Link to the log in the response and summarize the result rather than
-pasting the entire output. Keep generated logs out of commits.
 
 Compilation may report that the program is already up to date. State that clearly;
 do not describe it as a clean rebuild. Compilation does not run the program or
 verify runtime behavior. Do not launch the host application or execute its configured
 commands unless requested.
+
+## Live test updates
+
+When the user requests an update of the running local test, read the OTA port
+from `tests/device_live.yaml`; do not infer it from `tests/host_command_tests.yaml`
+or from an earlier run. If `tests/device_live.yaml` does not specify a port, use the
+ESPHome OTA default for the host platform. First verify that a process is
+listening on that port. Then run the upload from the parent ESPHome checkout root
+through the checkout environment:
+
+```sh
+python3 script/run-in-env.py esphome upload config/external_components/tests/device_live.yaml --device 127.0.0.1
+```
+
+Report both the OTA listener check and the upload result as failures or successes.
+An upload changes the running test process, so do not perform one unless requested.
 
 For changes, run checks appropriate to the affected behavior and report what was
 actually verified, including any limitations. Do not claim tests passed if they

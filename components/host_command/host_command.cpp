@@ -12,6 +12,25 @@ static void trim_line_endings(std::string &data) {
     data.pop_back();
 }
 
+static size_t truncate_state(std::string &data) {
+  const size_t original_size = data.size();
+  size_t removed = original_size - MAX_STATE_LEN;
+
+  // The removed count includes the extra bytes discarded to make room for the suffix,
+  // so recalculate until a change in digit count no longer changes the suffix length.
+  while (true) {
+    const std::string suffix = " [TRUNCATED " + std::to_string(removed) + " chars]";
+    const size_t retained = MAX_STATE_LEN - suffix.size();
+    const size_t updated_removed = original_size - retained;
+    if (updated_removed == removed) {
+      data.resize(retained);
+      data.append(suffix);
+      return removed;
+    }
+    removed = updated_removed;
+  }
+}
+
 CommandResult HostCommand::execute_command_() {
   if (geteuid() == 0 && !this->allow_root_) {
     CommandResult result;
@@ -48,9 +67,18 @@ CommandResult HostCommand::execute_command_() {
 }
 
 void HostCommandTextSensor::update() {
-  const auto result = this->execute_command_();
-  if (result.termination == CommandTermination::COMMAND_TERMINATION_EXITED && result.exit_code == 0)
+  auto result = this->execute_command_();
+  if (result.termination == CommandTermination::COMMAND_TERMINATION_EXITED && result.exit_code == 0) {
+    if (result.stdout_data.size() > MAX_STATE_LEN) {
+      const size_t original_size = result.stdout_data.size();
+      const size_t removed = truncate_state(result.stdout_data);
+      ESP_LOGW(TAG,
+               "Command '%s' produced %zu bytes of stdout; removed %zu bytes and appended a truncation marker "
+               "to fit the %zu-byte text sensor state limit",
+               this->invocation_.executable.c_str(), original_size, removed, MAX_STATE_LEN);
+    }
     this->publish_state(result.stdout_data);
+  }
 }
 
 void HostCommandTextSensor::dump_config() {
